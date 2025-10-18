@@ -1,125 +1,151 @@
-% SyncCouplingAssign updates edge weights in a strongly connected digraph
-% to enforce negative vertex imbalances and ensure synchronization
-% conditions are satisfied.
-%
-%   Inputs:
-%     G – strongly connected digraph
-%     a – scalar parameter
-%
-%   Outputs:
-%     G – updated digraph with edge_weight property assigned
-%
-function G = SyncCouplingAssign(G,a)
+function Gout = SyncCouplingAssign(G,a)
+% Robust version: supports numeric, string, or categorical node names in EndNodes.
 
-    %% Initialize graph properties
-    m = G.numedges;     % Number of edges
-    n = G.numnodes;     % Number of nodes
-
-    % Initialize edge properties
-    G.Edges.edge_weight = zeros(m,1);
-    G.Edges.SCC_start   = zeros(m,1);
-    G.Edges.SCC_end     = zeros(m,1);
-    G.Edges.edge_id     = (1:m).';
-
-    % Initialize node properties
-    G.Nodes.node_id   = (1:n).';
-
-    %% Strongly connected components
-    bins = conncomp(G,'Type','strong');
-
-    % Assign SCC_start and SCC_end for each edge
-    for e = 1:m
-        u = G.Edges.EndNodes(e,1);
-        v = G.Edges.EndNodes(e,2);
-        G.Edges.SCC_start(e) = bins(u);
-        G.Edges.SCC_end(e)   = bins(v);
+    if ~isa(G,'digraph')
+        error('G must be a digraph object.');
+    end
+    if ~isscalar(a) || a <= 0
+        error('a must be a positive scalar.');
     end
 
-    % Mark nodes that have incoming edges from different SCCs
-    has_in_edge = zeros(n,1);
-    for e = 1:m
-        if G.Edges.SCC_start(e) ~= G.Edges.SCC_end(e)
-            v = G.Edges.EndNodes(e,2);
-            has_in_edge(v) = 1;
-        end
+    M = numedges(G);
+    N = numnodes(G);
+
+    % Initialize or clear existing weights
+    if ~ismember('Weight', G.Edges.Properties.VariableNames)
+        G.Edges.Weight = zeros(M,1);
+    else
+        G.Edges.Weight(:) = 0;
     end
-    G.Nodes.has_in_edge = has_in_edge;
 
-    %% Process each strongly connected component (SCC)
-    uniqueSCCs = unique(bins);
+    % Strongly connected components
+    nodeSCC = conncomp(G,'Type','strong');
+    K = max(nodeSCC);
 
-    for s = uniqueSCCs
+    % Extract edge end nodes
+    endNodes = G.Edges.EndNodes;
 
-        % Extract subgraph for the current SCC
-        nodesInSCC = find(bins == s);
-        G_SCC      = subgraph(G,nodesInSCC);
-
-        % Root SCC selection:
-        %   - If no incoming edges, choose any node
-        %   - Otherwise, choose among nodes with incoming inter-SCC edges
-
-        if (sum(has_in_edge(nodesInSCC)) < 1)
-            nid = randsample(nodesInSCC,1);
+    % Convert to numeric node indices robustly
+    sList = zeros(M,1);
+    tList = zeros(M,1);
+    for e = 1:M
+        if isnumeric(endNodes)
+            src = endNodes(e,1);
+            tgt = endNodes(e,2);
+        elseif isstring(endNodes) || ischar(endNodes) || iscategorical(endNodes)
+            src = findnode(G, string(endNodes(e,1)));
+            tgt = findnode(G, string(endNodes(e,2)));
+        elseif iscell(endNodes)
+            src = findnode(G, endNodes{e,1});
+            tgt = findnode(G, endNodes{e,2});
         else
-            nid = randsample(find(and(bins == s,has_in_edge.'>0)),1);
+            error('Unsupported EndNodes type: %s', class(endNodes));
+        end
+        sList(e) = src;
+        tList(e) = tgt;
+    end
+
+    % Build incoming/outgoing edge lists
+    incomingEdges = cell(N,1);
+    outgoingEdges = cell(N,1);
+    for e = 1:M
+        incomingEdges{tList(e)} = [incomingEdges{tList(e)}; e];
+        outgoingEdges{sList(e)} = [outgoingEdges{sList(e)}; e];
+    end
+
+    % Process each SCC
+    for comp = 1:K
+        nodesInComp = find(nodeSCC == comp);
+        if isempty(nodesInComp)
+            continue;
         end
 
-        src = find(G_SCC.Nodes.node_id == nid);
-
-        %% Compute negative imbalance vector for this SCC
-        G_temp = NegativeImbalanceVectorSCC(G_SCC,src);
-
-        % Path length sum 
-        P_sum = max(-incidence(G_temp)*G_temp.Edges.edge_weight);
-
-        % Scale negative imbalance edge weights according 
-        % to the theorem in my paper
-        G_temp.Edges.edge_weight = 2*a*G_temp.Edges.edge_weight;
-
-        % Update global graph edge weights
-        for ei = 1:G_temp.numedges
-            eid = G_temp.Edges.edge_id(ei);
-            G.Edges.edge_weight(eid) = G.Edges.edge_weight(eid) + G_temp.Edges.edge_weight(ei);
-        end
-
-        %% Cycle basis sum
-        G_temp = CycleBasisVector(G_SCC);
-
-        % Scale cycle basis vector edge weights
-
-        G_temp.Edges.edge_weight = ...
-            (2*a/numel(nodesInSCC))*(1+P_sum)*P_sum*G_temp.Edges.edge_weight;
-
-        % Update global edge weights with cycle basis contributions
-        for ei = 1:G_temp.numedges
-            eid = G_temp.Edges.edge_id(ei);
-            G.Edges.edge_weight(eid) = G.Edges.edge_weight(eid) + G_temp.Edges.edge_weight(ei);
-        end
-
-        %% Assign imbalance correction
-        outSum = sum(G_temp.Edges.edge_weight(G_temp.Edges.EndNodes(:,1) == src));
-        inSum  = sum(G_temp.Edges.edge_weight(G_temp.Edges.EndNodes(:,2) == src));
-        diff   = outSum - inSum;
-
-        % Nodes in current SCC with incoming inter-SCC edges
-        hi_nodes = nodesInSCC(has_in_edge(nodesInSCC) == 1);
-
-        if ~isempty(hi_nodes)
-            % Distribute imbalance equally among incoming inter-SCC edges
-            for u = hi_nodes
-                incomingE = find(G.Edges.EndNodes(:,2) == u & ...
-                                 G.Edges.SCC_start ~= G.Edges.SCC_end);
-                if u ~= nid
-                    inedge_weight = a;
-                else
-                    inedge_weight = a + diff/2;
-                end
-
-                share = inedge_weight / numel(incomingE);
-                for e = incomingE
-                    G.Edges.edge_weight(e) = G.Edges.edge_weight(e) + share;
-                end
+        % --- Choose representative (chosen) vertex
+        candidateNodes = [];
+        for v = nodesInComp(:).'
+            incE = incomingEdges{v};
+            if isempty(incE), continue; end
+            if any(nodeSCC(sList(incE)) ~= comp)
+                candidateNodes(end+1) = v; %#ok<AGROW>
             end
         end
+
+        if ~isempty(candidateNodes)
+            chosenVertex = candidateNodes(randi(numel(candidateNodes)));
+        else
+            chosenVertex = nodesInComp(randi(numel(nodesInComp)));
+        end
+
+        % --- Aggregate incidence vectors
+        sumVec = zeros(M,1);
+        for v = nodesInComp(:).'
+            if v == chosenVertex, continue; end
+            pth = shortestpath(G, chosenVertex, v);
+            if isempty(pth)
+                error('No path found inside SCC %d from %d to %d.', comp, chosenVertex, v);
+            end
+            L = numel(pth)-1;
+            for s = 1:L
+                u = pth(s); w = pth(s+1);
+                eIdx = find(sList==u & tList==w, 1);
+                if isempty(eIdx)
+                    error('Edge inconsistency: %d -> %d not found.', u, w);
+                end
+                sumVec(eIdx) = sumVec(eIdx) + (L-s+1);
+            end
+        end
+
+        % Scale aggregated vector
+        G.Edges.Weight = G.Edges.Weight + 2*a*sumVec;
+
+        % --- Assign weights for incoming edges from other SCCs
+        incE_chosen = incomingEdges{chosenVertex};
+        incFromOther = incE_chosen(nodeSCC(sList(incE_chosen)) ~= comp);
+        if ~isempty(incFromOther)
+            outgoingSum = sum(G.Edges.Weight(outgoingEdges{chosenVertex}));
+            incomingSum = sum(G.Edges.Weight(incE_chosen));
+            imbalanceChosen = outgoingSum - incomingSum;
+            totalWeight = (imbalanceChosen/2 + a);
+            G.Edges.Weight(incFromOther) = G.Edges.Weight(incFromOther) + totalWeight/numel(incFromOther);
+        end
+
+        otherVerts = setdiff(nodesInComp, chosenVertex);
+        for v = otherVerts(:).'
+            incE_v = incomingEdges{v};
+            if isempty(incE_v), continue; end
+            incFromOther_v = incE_v(nodeSCC(sList(incE_v)) ~= comp);
+            if ~isempty(incFromOther_v)
+                G.Edges.Weight(incFromOther_v) = G.Edges.Weight(incFromOther_v) + a/numel(incFromOther_v);
+            end
+        end
+
+        % --- Verify imbalance condition
+        imbalances = zeros(numel(nodesInComp),1);
+        for k = 1:numel(nodesInComp)
+            v = nodesInComp(k);
+            outgoingSum = sum(G.Edges.Weight(outgoingEdges{v}));
+            incomingSum = sum(G.Edges.Weight(incomingEdges{v}));
+            imbalances(k) = outgoingSum - incomingSum;
+        end
+        chosenIdx = find(nodesInComp == chosenVertex);
+        if imbalances(chosenIdx) > 0 && all(imbalances(setdiff(1:numel(nodesInComp),chosenIdx)) <= 0)
+            fprintf('SCC %d: chosen vertex %d OK (imbalance %.4g)\n', comp, chosenVertex, imbalances(chosenIdx));
+        else
+            warning('SCC %d imbalance check failed.', comp);
+        end
     end
+
+    % --- Final output + visualization
+    Gout = G;
+    figure;
+    p = plot(Gout,'Layout','layered','EdgeLabel',Gout.Edges.Weight,'NodeLabel',imbalances);
+    allImb = zeros(N,1);
+    for v = 1:N
+        outE = outgoingEdges{v};
+        inE  = incomingEdges{v};
+        allImb(v) = sum(Gout.Edges.Weight(outE)) - sum(Gout.Edges.Weight(inE));
+    end
+    p.NodeCData = allImb;
+    colorbar;
+    title('Directed graph with edge weights and vertex imbalance');
 end
