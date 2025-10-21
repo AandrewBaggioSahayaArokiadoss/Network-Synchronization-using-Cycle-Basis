@@ -16,18 +16,27 @@ a = -sigma + (beta*(beta+1)*(rho+sigma)^2) / (16*(beta-1));
 
 %% Define connectivity digraphs
 % Connectivity for first time interval
-tail1 = [1 2 3 3 4 8 8 7 8 6 7 9 10 5 5 7];
-head1 = [2 3 1 4 1 1 3 3 6 7 8 10 5 9 8 9];
-G1    = digraph(tail1, head1);
+% tail1 = [1 2 3 3 4 8 8 7 8 6 7 9 10 5 5 7];
+% head1 = [2 3 1 4 1 1 3 3 6 7 8 10 5 9 8 9];
+
+tail1 = [1 2 3 4 4 5 4 5 6];
+head1 = [2 3 1 1 2 1 5 6 4];
+G1 = digraph(tail1, head1);
 
 % Connectivity for second time interval
-tail2 = [1 2 2 3 3 4 1 4 2 3 4 5 5 6 7 8 8 8 7 9 10 1];
-head2 = [2 1 3 1 4 1 5 5 6 6 7 6 7 8 5 6 7 9 9 10 9 10];
+% tail2 = [1 2 2 3 3 4 1 4 2 3 4 5 5 6 7 8 8 8 7 9 10 1];
+% head2 = [2 1 3 1 4 1 5 5 6 6 7 6 7 8 5 6 7 9 9 10 9 10];
+
+tail2 = [1 2 3 4 5 6 3 4];
+head2 = [2 3 4 1 6 5 6 5];
 G2    = digraph(tail2, head2);
 
 % Connectivity for second time interval
-tail3 = [1 2 8 8 8 2 9 7 6 4 4 4 3 10 5];
-head3 = [2 8 1 9 7 6 7 6 4 9 3 5 10 5 3];
+% tail3 = [1 2 8 8 8 2 9 7 6 4 4 4 3 10 5];
+% head3 = [2 8 1 9 7 6 7 6 4 9 3 5 10 5 3];
+
+tail3 = [1 2 3 4 5 6 2 6];
+head3 = [2 1 4 3 6 5 3 1];
 G3    = digraph(tail3, head3);
 
 figure(1)
@@ -37,7 +46,7 @@ plot(G2,'Layout','circle')
 figure(3)
 plot(G3,'Layout','circle')
 
-N         = 10;  % Number of oscillators (nodes)
+N         = G1.numnodes;  % Number of oscillators (nodes)
 numStates = 3;   % State dimension of each oscillator
 
 %% Simulation settings
@@ -52,9 +61,9 @@ tspan2 = linspace(0, t_end2, data_length2);
 tspan3 = linspace(0, t_end3, data_length3);
 
 % Assign coupling strengths
-G1 = SyncCouplingAssign(G1, a);
-G2 = SyncCouplingAssign(G2, a);
-G3 = SyncCouplingAssign(G3, a);
+G1 = SyncCouplingAssign(G1,a);
+G2 = SyncCouplingAssign(G2,a);
+G3 = SyncCouplingAssign(G3,a);
 
 %% Initial conditions
 x_mean = 5; 
