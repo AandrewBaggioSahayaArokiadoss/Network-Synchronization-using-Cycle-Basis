@@ -1,4 +1,13 @@
 function G = CycleBasisVector(G, a)
+    arguments
+        G {mustBeA(G,"digraph")} 
+        a (1,1) double {mustBePositive}
+    end
+
+    %% Ensure weight property exists
+    if ~ismember('Weight', G.Edges.Properties.VariableNames)
+        G.Edges.Weight = zeros(G.numedges, 1);
+    end
 
     %% Initialize temporary weights
     null_weight = zeros(G.numedges,1);
@@ -35,7 +44,7 @@ function G = CycleBasisVector(G, a)
 
         %% --- NEW CODE BLOCK: compute D_root, P_sum, scaling_factor ---
         % Restrict to edges within this component
-        eidxComp = find(edgesInComp_mask);
+        % eidxComp = find(edgesInComp_mask);
         % For each vertex in the component compute (sum of outgoing weights within comp) minus (sum of incoming weights within comp)
         w = G.Edges.Weight;   % existing weight vector (must exist)
         diff_vect = zeros(numel(nodesInComp),1);
@@ -48,7 +57,7 @@ function G = CycleBasisVector(G, a)
             sum_in  = sum( w(inMask));
             diff_vect(i) = sum_out - sum_in;
         end
-        
+
         % pick the maximal positive difference (if any)
         posDiffs = diff_vect(diff_vect>0);
         D_root = max(posDiffs);
