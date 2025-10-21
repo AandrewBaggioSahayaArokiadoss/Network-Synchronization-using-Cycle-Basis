@@ -18,7 +18,7 @@ function [X,t] = SimulateCoupledSystems(systemDynamics,tspan,X0,G,P)
     %% Build weighted Laplacian matrix from graph
     % Weighted adjacency matrix (transpose because digraph adjacency
     % gives row→col edges, but we want incoming edges in rows)
-    A = full(adjacency(G, G.Edges.edge_weight)).';
+    A = full(adjacency(G, G.Edges.Weight)).';
 
     % In-degree Laplacian (row sums = in-degree weights)
     L = diag(sum(A,2)) - A;
