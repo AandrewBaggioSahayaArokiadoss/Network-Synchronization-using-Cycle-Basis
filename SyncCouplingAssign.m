@@ -9,10 +9,19 @@ function G = SyncCouplingAssign(G,a)
     end
     
     G = NegativeImbalanceVector(G,a);
+
+    % W_neg = G.Edges.Weight.';
+  
+    % figure
+    % plot(G,'Layout','circle','EdgeLabel',W_neg)
+
+    % disp(W_neg)
     
     G = CycleBasisVector(G,a);
 
-    figure
-    plot(G,'Layout','circle','EdgeLabel',G.Edges.Weight);
-    title('Directed graph with edge weights and vertex imbalance');
+
+    % 
+    % figure
+    % plot(G,'Layout','circle','EdgeLabel',G.Edges.Weight);
+    % title('Directed graph with edge weights and vertex imbalance');
 end
