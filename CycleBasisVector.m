@@ -9,7 +9,7 @@ function G = CycleBasisVector(G, a)
         G.Edges.Weight = zeros(G.numedges, 1);
     end
 
-    %% Initialize temporary weights
+    % %% Initialize temporary weights
     null_weight = zeros(G.numedges,1);
 
     % Strongly Connected Component (SCC) decomposition
@@ -26,20 +26,6 @@ function G = CycleBasisVector(G, a)
         else
             % find edges whose both endpoints are in this component
             edgesInComp_mask = ismember(E(:,1),nodesInComp) & ismember(E(:,2),nodesInComp);
-        end
-
-        % Continue until all edges in this SCC have been assigned non‐zero weights
-        while any(null_weight<1 & edgesInComp_mask)
-            zeroIdx = find(null_weight<1 & edgesInComp_mask);
-            eidx    = zeroIdx(randi(numel(zeroIdx)));
-            uv = E(eidx,:);
-            t  = uv(1);
-            h  = uv(2);
-            [~,~,edgePath] = shortestpath(G,h,t);
-            if ~isempty(edgePath)
-                C = [eidx, edgePath(:)'];
-                null_weight(C) = null_weight(C) + 1;
-            end
         end
 
         %% --- NEW CODE BLOCK: compute D_root, P_sum, scaling_factor ---
@@ -65,6 +51,8 @@ function G = CycleBasisVector(G, a)
         % Check if this SCC has incoming edges from other SCCs
         % i.e., edges whose head is in this SCC and whose tail is *not* in this SCC
         incoming_from_other_mask = ismember(E(:,2),nodesInComp) & ~ismember(E(:,1),nodesInComp);
+        % m_comp = sum(edgesInComp_mask>0);
+        % null_weight=(zeros(numel(m_comp),1));
         if ~any(incoming_from_other_mask)
             % no incoming from other SCCs
             P_sum = D_root / (2*a);
@@ -74,7 +62,23 @@ function G = CycleBasisVector(G, a)
             % has incoming from other SCCs
             scaling_factor = 1;
         end
-         %% Update edge weights of G
-        G.Edges.Weight = G.Edges.Weight + scaling_factor*null_weight;
+
+        % Continue until all edges in this SCC have been assigned non‐zero weights
+        while any(null_weight<1 & edgesInComp_mask)
+            zeroIdx = find(null_weight<1 & edgesInComp_mask);
+            eidx    = zeroIdx(randi(numel(zeroIdx)));
+            uv = E(eidx,:);
+            t  = uv(1);
+            h  = uv(2);
+            [~,~,edgePath] = shortestpath(G,h,t);
+            if ~isempty(edgePath)
+                C = [eidx, edgePath(:)'];
+                null_weight(C) = null_weight(C) + scaling_factor;
+            end
+        end
     end
+    %% Update edge weights of G
+    G.Edges.Weight = G.Edges.Weight + null_weight;
+    figure
+    plot(G,'EdgeLabel',null_weight,'Layout','circle')
 end
