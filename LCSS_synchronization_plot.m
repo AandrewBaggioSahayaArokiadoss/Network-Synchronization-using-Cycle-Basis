@@ -13,7 +13,7 @@ beta  = 8/3;
 
 % Coupling strength (analytically derived)
 a = -sigma + (beta*(beta+1)*(rho+sigma)^2) / (16*(beta-1));
-
+% a=1;
 %% Define connectivity digraphs
 % Connectivity for first time interval
 % tail1 = [1 2 3 3 4 8 8 7 8 6 7 9 10 5 5 7];
@@ -39,12 +39,12 @@ tail3 = [1 2 3 4 5 6 2 6];
 head3 = [2 1 4 3 6 5 3 1];
 G3    = digraph(tail3, head3);
 
-figure(1)
-plot(G1,'Layout','circle')
-figure(2)
-plot(G2,'Layout','circle')
-figure(3)
-plot(G3,'Layout','circle')
+% figure(1)
+% plot(G1,'Layout','circle')
+% figure(2)
+% plot(G2,'Layout','circle')
+% figure(3)
+% plot(G3,'Layout','circle')
 
 N         = G1.numnodes;  % Number of oscillators (nodes)
 numStates = 3;   % State dimension of each oscillator
@@ -62,8 +62,21 @@ tspan3 = linspace(0, t_end3, data_length3);
 
 % Assign coupling strengths
 G1 = SyncCouplingAssign(G1,a);
+figure
+plot(G1,'EdgeLabel',G1.Edges.Weight,'Layout','circle')
 G2 = SyncCouplingAssign(G2,a);
+figure
+plot(G2,'EdgeLabel',G2.Edges.Weight,'Layout','circle')
 G3 = SyncCouplingAssign(G3,a);
+figure
+plot(G3,'EdgeLabel',G3.Edges.Weight,'Layout','circle')
+
+% figure(1)
+% plot(G1,'EdgeLabel',G1.Edges.Weight,'Layout','circle')
+% figure(2)
+% plot(G2,'EdgeLabel',G2.Edges.Weight,'Layout','circle')
+% figure(3)
+% plot(G3,'EdgeLabel',G3.Edges.Weight,'Layout','circle')
 
 %% Initial conditions
 x_mean = 5; 
