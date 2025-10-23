@@ -1,7 +1,8 @@
+
 % NegativeImbalanceVector - computes a vector with positive entries that
 % can make all but one vertex imbalance to have a negative values
 
-function Gout = NegativeImbalanceVector(G,a)
+function G = NegativeImbalanceVector(G,a)
 % Robust version: supports numeric, string, or categorical node names in EndNodes.
 
     if ~isa(G,'digraph')
@@ -121,36 +122,8 @@ function Gout = NegativeImbalanceVector(G,a)
                 G.Edges.Weight(incFromOther_v) = G.Edges.Weight(incFromOther_v) + a/numel(incFromOther_v);
             end
         end
-
-        % --- Verify imbalance condition
-        imbalances = zeros(numel(nodesInComp),1);
-        for k = 1:numel(nodesInComp)
-            v = nodesInComp(k);
-            outgoingSum = sum(G.Edges.Weight(outgoingEdges{v}));
-            incomingSum = sum(G.Edges.Weight(incomingEdges{v}));
-            imbalances(k) = outgoingSum - incomingSum;
-        end
-        chosenIdx = find(nodesInComp == chosenVertex);
-        if imbalances(chosenIdx) > 0 && all(imbalances(setdiff(1:numel(nodesInComp),chosenIdx)) <= 0)
-            fprintf('SCC %d: chosen vertex %d OK (imbalance %.4g)\n', comp, chosenVertex, imbalances(chosenIdx));
-        else
-            warning('SCC %d imbalance check failed.', comp);
-        end
     end
 
-    % --- Final output + visualization
-    Gout = G;
-    allImb = zeros(N,1);
-    for v = 1:N
-        outE = outgoingEdges{v};
-        inE  = incomingEdges{v};
-        allImb(v) = sum(Gout.Edges.Weight(outE)) - sum(Gout.Edges.Weight(inE));
-    end
-
-    % p.NodeCData = allImb; 
-    % colorbar;
-
-    figure;
-    p = plot(Gout,'Layout','circle','EdgeLabel',Gout.Edges.Weight,'NodeLabel',allImb);
-    title('Directed graph with edge weights and vertex imbalance');
+    figure
+    plot(G,'EdgeLabel',G.Edges.Weight,'Layout','circle')
 end
