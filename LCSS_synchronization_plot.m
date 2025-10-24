@@ -116,7 +116,7 @@ markers   = {'none','none','none','none','*','*','o','o','.','.'};
 
 %% Data storage setup
 E         = zeros(N, length(t));   % Synchronization error matrix
-cols      = 'ABCDEFGHIJK';         % Excel column labels
+cols      = 'ABCDEFG';         % Excel column labels
 filename  = 'synchronization_data.xlsx';
 range_end = length(t) + 1;
 
