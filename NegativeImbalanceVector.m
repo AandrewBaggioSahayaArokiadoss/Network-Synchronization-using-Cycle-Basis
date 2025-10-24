@@ -84,7 +84,7 @@ function G = NegativeImbalanceVector(G,a)
         sumVec = zeros(M,1);
         for v = nodesInComp(:).'
             if v == chosenVertex, continue; end
-            pth = shortestpath(G, chosenVertex, v);
+            pth = shortestpath(G, chosenVertex, v)
             if isempty(pth)
                 error('No path found inside SCC %d from %d to %d.', comp, chosenVertex, v);
             end
