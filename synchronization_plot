@@ -27,7 +27,7 @@ df = df.dropna(how='all')
 t = df.iloc[:, 0].to_numpy()
 
 # Extract data from columns B–K (10 oscillators), transpose to get shape (10, n)
-E = df.iloc[:, 1:11].to_numpy().T
+E = df.iloc[:, 1:7].to_numpy().T
 
 # ===== Create plot =====
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -55,7 +55,7 @@ for i in range(E.shape[0]):
 # ===== Labels, title, and formatting =====
 ax.set_xlabel("Time", fontsize=12)
 ax.set_ylabel("Sum of squares of pairwise distances", fontsize=12)
-ax.set_title("Synchronization of 10 Lorentz oscillators", fontsize=14, fontweight='bold')
+ax.set_title("Synchronization of 6 Lorentz oscillators", fontsize=14, fontweight='bold')
 
 # Add vertical dashed black line at x = 1.5 and label it
 ax.axvline(x=1, color='black', linestyle='--', linewidth=2)
