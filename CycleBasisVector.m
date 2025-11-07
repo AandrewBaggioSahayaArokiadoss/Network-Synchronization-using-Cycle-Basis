@@ -55,7 +55,7 @@ function G = CycleBasisVector(G, a)
         % null_weight=(zeros(numel(m_comp),1));
         if ~any(incoming_from_other_mask)
             % no incoming from other SCCs
-            P_sum = D_root / (2*a);
+            P_sum = D_root / (a);
             numVerts = numel(nodesInComp);
             scaling_factor = 2 * a * P_sum * (1 + P_sum) / numVerts;
         else
