@@ -1,7 +1,7 @@
 # 🔗 Network Synchronization of Lorenz Oscillators
 
 This repository contains **MATLAB** code for simulating and **Python** code for visualizing the synchronization of a network of coupled Lorenz oscillators.
-The project demonstrates the application of **graph theory**—specifically weighted Laplacian matrices and a novel weight assignment method—to achieve and analyze network synchronization across **switching topologies**.
+The project demonstrates the application of **spectral graph theory**—specifically weighted Laplacian matrices and a novel weight assignment method—to achieve and analyze network synchronization across **switching topologies**.
 
 ---
 
