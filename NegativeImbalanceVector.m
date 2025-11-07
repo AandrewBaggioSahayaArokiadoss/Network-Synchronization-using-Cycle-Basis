@@ -84,7 +84,7 @@ function G = NegativeImbalanceVector(G,a)
         sumVec = zeros(M,1);
         for v = nodesInComp(:).'
             if v == chosenVertex, continue; end
-            pth = shortestpath(G, chosenVertex, v)
+            pth = shortestpath(G, chosenVertex, v);
             if isempty(pth)
                 error('No path found inside SCC %d from %d to %d.', comp, chosenVertex, v);
             end
@@ -100,7 +100,7 @@ function G = NegativeImbalanceVector(G,a)
         end
 
         % Scale aggregated vector
-        G.Edges.Weight = G.Edges.Weight + 2*a*sumVec;
+        G.Edges.Weight = G.Edges.Weight + a*sumVec;
 
         % --- Assign weights for incoming edges from other SCCs
         incE_chosen = incomingEdges{chosenVertex};
